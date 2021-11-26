@@ -61,11 +61,14 @@ class Sudoku:
         return where
 
     def fill_only_possible_by_row(self, row):
+        progress = False
         for digit in self.all_digits - self.row_set(row):
             digit_is_possible_at = self.where_is_digit_possible_in_row(digit, row)
             if len(digit_is_possible_at) == 1:
                 column = next(iter(digit_is_possible_at))
                 self.rows[row]= self.rows[row][0:column] + digit + self.rows[row][column+1:]
+                progress = True
+        return progress
 
     def fill_only_possible_by_column(self, column):
         progress = False
