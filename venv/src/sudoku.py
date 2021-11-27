@@ -18,67 +18,56 @@ class Sudoku:
             s += row_to_string(self.rows[i]) + '\n'
         return s
 
-    def at(self, row, column):
-        return self.rows[row][column]
+    def at(self, pos):
+        return self.rows[pos[0]][pos[1]]
 
-    def row_set(self, row):
-        return set([digit for digit in self.rows[row]]) - {' '}
+    def row_niner(self, row):
+        return [(row,column) for column in range(0,9)]
 
-    def column_set(self, column):
-        return set([self.rows[row][column] for row in range(0,9)]) - {' '}
+    def column_niner(self, column):
+        return [(row,column) for row in range(0,9)]
 
-    def square_set(self, row, column):
-        square = set()
+    def square_niner(self, row, column):
+        niner = []
         for r in range(3):
-            square.update([digit for digit in self.rows[row*3+r][column*3:column*3+3]])
-        return square - {' '}
+            niner.extend([(row*3+r,column*3+c) for c in range(0,3)])
+        return niner
 
-    def possible_at(self, row, column):
-        cell = self.at(row, column)
+    def all_enclosing_niners(self, row, column):
+        return self.row_niner(row) + self.column_niner(column) +self.square_niner(row//3,column//3)
+
+    def niner_set(self, niner):
+        return set([self.at(pos) for pos in niner]) - {' '}
+
+    def excluded_at(self, anchor):
+        row, column = anchor
+        return set([self.at(pos) for pos in self.all_enclosing_niners(row, column)]) - {self.at(anchor)}
+
+    def possible_at(self, pos):
+        cell = self.at(pos)
         if cell == " ":
-            return self.all_digits - self.row_set(row) - self.column_set(column) - self.square_set(row//3,column//3)
+            return self.all_digits - self.excluded_at(pos)
         else:
             return set(cell)
 
-    def where_is_digit_possible_in_row(self, digit, row):
-        # just to speed up
-        index = self.rows[row].find(digit)
-        if index != -1:
-            return set([index])
+    def where_is_digit_possible_in_niner(self, digit, niner):
+        return set([pos for pos in niner if digit in self.possible_at(pos)])
 
-        # this is sufficient to pass unit tests
-        where = set()
-        for column in range(0, 9):
-            if digit in self.possible_at(row,column):
-                where.add(column)
-        return where
+    def set_digit(self, pos, digit):
+        row, column = pos
+        self.rows[row] = self.rows[row][0:column] + digit + self.rows[row][column + 1:]
 
-    def where_is_digit_possible_in_column(self, digit, column):
-        where = set()
-        for row in range(0, 9):
-            if digit in self.possible_at(row,column):
-                where.add(row)
-        return where
-
-    def fill_only_possible_by_row(self, row):
+    def fill_only_possible_by_niner(self, niner):
         progress = False
-        for digit in self.all_digits - self.row_set(row):
-            digit_is_possible_at = self.where_is_digit_possible_in_row(digit, row)
+        existing_digits = set([self.at(pos) for pos in niner]) - {' '}
+        for digit in self.all_digits - existing_digits:
+            digit_is_possible_at = self.where_is_digit_possible_in_niner(digit, niner)
             if len(digit_is_possible_at) == 1:
-                column = next(iter(digit_is_possible_at))
-                self.rows[row]= self.rows[row][0:column] + digit + self.rows[row][column+1:]
+                pos = next(iter(digit_is_possible_at))
+                self.set_digit(pos,digit)
                 progress = True
         return progress
 
-    def fill_only_possible_by_column(self, column):
-        progress = False
-        for digit in self.all_digits - self.column_set(column):
-            digit_is_possible_at = self.where_is_digit_possible_in_column(digit, column)
-            if len(digit_is_possible_at) == 1:
-                row = next(iter(digit_is_possible_at))
-                self.rows[row]= self.rows[row][0:column] + digit + self.rows[row][column+1:]
-                progress = True
-        return progress
 
 if __name__ == '__main__':
     puzzle = ("1   4   8 6 5    "
@@ -92,16 +81,17 @@ if __name__ == '__main__':
               "    5 6 1   9   7")
     sudo = Sudoku(puzzle)
     print(str(sudo) + "\n")
+
+    all_niners = []
+    for index in range(0,9):
+        all_niners.append(sudo.row_niner(index))
+        all_niners.append(sudo.column_niner(index))
+
     anyProgress = True
     while anyProgress:
         anyProgress = False
-        for row in range(0, 9):
-            progress = sudo.fill_only_possible_by_row(row)
-            if progress:
-                print(str(sudo) + "\n")
-                anyProgress = True
-        for column in range(0, 9):
-            progress = sudo.fill_only_possible_by_column(column)
+        for niner in all_niners:
+            progress = sudo.fill_only_possible_by_niner(niner)
             if progress:
                 print(str(sudo) + "\n")
                 anyProgress = True
