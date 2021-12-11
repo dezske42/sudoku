@@ -70,16 +70,8 @@ class Sudoku:
 
 
 if __name__ == '__main__':
-    puzzle = ("1   4   8 6 5    "
-              "8             7 6"
-              "3       7        "
-              "  8 7   6   3    "
-              "6 4 2 7   5 1 9 8"
-              "    3   4   7 6  "
-              "        2       1"
-              "4 6             5"
-              "    5 6 1   9   7")
-    sudo = Sudoku(puzzle)
+    import puzzles
+    sudo = Sudoku(puzzles.puzzle7)
     print(str(sudo) + "\n")
 
     all_niners = []
